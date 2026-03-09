@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gesto Partícula | Demo 3D Interactiva</title>
+    <!-- MediaPipe external libs for better camera performance (Vite resolves these properly) -->
+    <link rel="stylesheet" href="src/styles.css">
+</head>
+
+<body>
+    <div id="ui-container">
+        <header>
+            <h1>Particle Morph</h1>
+            <p id="status">Iniciando cámara...</p>
+        </header>
+
+        <main id="display-controls">
+            <div class="gesture-card" id="gesture-indicator-sphere">
+                <span class="emoji">🖐️</span> Palma (Saturno)
+            </div>
+            <div class="gesture-card" id="gesture-indicator-heart">
+                <span class="emoji">✊</span> Corazón
+            </div>
+            <div class="gesture-card" id="gesture-indicator-star">
+                <span class="emoji">✌️</span> Estrella
+            </div>
+            <div class="gesture-card" id="gesture-indicator-love">
+                <span class="emoji">👌</span> I LOVE YOU
+            </div>
+        </main>
+
+        <footer id="ui-footer">
+            <button id="btn-toggle-camera" class="btn-primary">Ver Cámara</button>
+        </footer>
+
+        <div id="error-banner" class="hidden">
+            <p>Por favor, permite el acceso a la cámara para interactuar.</p>
+        </div>
+    </div>
+
+    <!-- Video preview for MediaPipe tracking -->
+    <div id="video-container" class="hidden-preview">
+        <video id="input-video" class="input_video" autoplay playsinline></video>
+        <div class="scan-line"></div>
+    </div>
+
+    <canvas id="three-canvas"></canvas>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>
