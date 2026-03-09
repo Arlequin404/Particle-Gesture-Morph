@@ -34,6 +34,15 @@ export class ParticleSystem {
 
         this.particles = new THREE.Points(this.geometry, material);
         this.scene.add(this.particles);
+
+        // Audio Reactive properties
+        this.analyser = null;
+        this.dataArray = null;
+    }
+
+    setAudioAnalyser(analyser) {
+        this.analyser = analyser;
+        this.dataArray = new Uint8Array(analyser.frequencyBinCount);
     }
 
     setInitialState() {
@@ -135,44 +144,48 @@ export class ParticleSystem {
     }
 
     generateLove(targets) {
-        // Use a canvas to sample "I LOVE YOU" text points
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        canvas.width = 600;
-        canvas.height = 100;
+        canvas.width = 1000;
+        canvas.height = 200;
 
         ctx.fillStyle = 'white';
-        // Modern font that usually exists in browsers
-        ctx.font = 'bold 80px Arial';
+        // Bold sans-serif for better particle density
+        ctx.font = 'bold 120px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('I LOVE YOU', 300, 50);
+        ctx.fillText('I LOVE YOU', 500, 100);
 
-        const imageData = ctx.getImageData(0, 0, 600, 100).data;
+        const imageData = ctx.getImageData(0, 0, 1000, 200).data;
         const points = [];
 
-        // Sample every few pixels
-        for (let y = 0; y < 100; y += 1) {
-            for (let x = 0; x < 600; x += 1) {
-                const alpha = imageData[(y * 600 + x) * 4 + 3];
-                if (alpha > 128) {
+        // High density sampling
+        for (let y = 0; y < 200; y += 2) {
+            for (let x = 0; x < 1000; x += 2) {
+                const alpha = imageData[(y * 1000 + x) * 4 + 3];
+                if (alpha > 180) { // Sharper threshold
                     points.push({
-                        x: (x - 300) * 0.05,
-                        y: (50 - y) * 0.05
+                        x: (x - 500) * 0.03,
+                        y: (100 - y) * 0.03
                     });
                 }
             }
         }
 
-        const scale = 0.8;
-        for (let i = 0; i < this.particleCount; i++) {
-            // Pick a point from our text samples
-            const pt = points[i % points.length];
+        // If no points (fallback), create a simple grid
+        if (points.length === 0) {
+            for (let i = 0; i < 1000; i++) points.push({ x: (Math.random() - 0.5) * 10, y: (Math.random() - 0.5) * 2 });
+        }
 
-            targets[i * 3] = pt.x * scale;
-            targets[i * 3 + 1] = pt.y * scale;
-            // Add slight depth variation for a 3D feel
-            targets[i * 3 + 2] = (Math.random() - 0.5) * 0.3;
+        for (let i = 0; i < this.particleCount; i++) {
+            const pt = points[i % points.length];
+            // Jitter points slightly to fill gaps
+            const jitterX = (Math.random() - 0.5) * 0.05;
+            const jitterY = (Math.random() - 0.5) * 0.05;
+
+            targets[i * 3] = (pt.x + jitterX);
+            targets[i * 3 + 1] = (pt.y + jitterY);
+            targets[i * 3 + 2] = (Math.random() - 0.5) * 0.2;
         }
     }
 
@@ -188,9 +201,20 @@ export class ParticleSystem {
     }
 
     update(time) {
-        // Subtle constant rotation is overridden by hand rotation if active
-        // but we keep a base rotation for life
+        // Subtle constant rotation
         this.particles.rotation.y += 0.001;
+
+        // Music reaction
+        if (this.analyser) {
+            this.analyser.getByteFrequencyData(this.dataArray);
+            let avg = 0;
+            for (let i = 0; i < this.dataArray.length; i++) avg += this.dataArray[i];
+            avg /= this.dataArray.length;
+
+            const scale = 1 + (avg / 255) * 0.4;
+            this.particles.scale.set(scale, scale, scale);
+            this.particles.material.size = 0.05 + (avg / 255) * 0.08;
+        }
 
         TWEEN.update(time);
     }

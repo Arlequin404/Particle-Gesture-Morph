@@ -29,12 +29,89 @@ class App {
         this.particles = new ParticleSystem(this.scene);
 
         // UI Camera Toggle
-        const btnToggle = document.getElementById('btn-toggle-camera');
+        const btnToggleCamera = document.getElementById('btn-toggle-camera');
         const videoCont = document.getElementById('video-container');
-        btnToggle.addEventListener('click', () => {
+        btnToggleCamera.addEventListener('click', () => {
             const isHidden = videoCont.classList.contains('hidden-preview');
             videoCont.classList.toggle('hidden-preview');
-            btnToggle.innerText = isHidden ? 'Ocultar Cámara' : 'Ver Cámara';
+            btnToggleCamera.innerText = isHidden ? 'Ocultar Cámara' : 'Ver Cámara';
+        });
+
+        // UI Music Toggle & Volume Control
+        const btnToggleMusic = document.getElementById('btn-toggle-music');
+        const volumeSlider = document.getElementById('volume-slider');
+        const audio = document.getElementById('bg-music');
+        let audioContext, source, analyser;
+
+        // Initialize volume from slider
+        audio.volume = volumeSlider.value;
+        console.log("Audio Initialized. Volume:", audio.volume);
+
+        volumeSlider.addEventListener('input', (e) => {
+            audio.volume = e.target.value;
+        });
+
+        // Error handling for audio file
+        audio.addEventListener('error', (e) => {
+            console.error("Audio Load Error:", e);
+            btnToggleMusic.innerHTML = '<span class="music-icon">❌</span> Error Audio';
+        });
+
+        // --- Robust Autostart logic ---
+        const startAudio = async () => {
+            if (!audioContext) {
+                console.log("Initializing Audio Engine...");
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                source = audioContext.createMediaElementSource(audio);
+                analyser = audioContext.createAnalyser();
+                source.connect(analyser);
+                analyser.connect(audioContext.destination);
+                this.particles.setAudioAnalyser(analyser);
+            }
+
+            if (audio.paused) {
+                audio.volume = volumeSlider.value; // Ensure volume from slider
+                try {
+                    await audioContext.resume();
+                    await audio.play();
+                    console.log("✅ Audio started successfully.");
+                    btnToggleMusic.classList.add('active-music', 'playing');
+                    btnToggleMusic.innerHTML = '<span class="music-icon">🎵</span> Saturno: ON';
+
+                    // Cleanup interactions
+                    document.removeEventListener('click', startAudio);
+                    document.removeEventListener('touchstart', startAudio);
+                } catch (err) {
+                    console.warn("🚫 Autoplay blocked. Waiting for first interaction...");
+                    btnToggleMusic.innerHTML = '<span class="music-icon">🎵</span> Toca para sonar';
+                }
+            }
+        };
+
+        // Try to play immediately (will fail in most browsers but worth it)
+        startAudio();
+
+        // Universal interaction hooks (First click/tap anywhere starts it)
+        document.addEventListener('click', startAudio, { once: true });
+        document.addEventListener('touchstart', startAudio, { once: true });
+
+        btnToggleMusic.addEventListener('click', async (e) => {
+            e.stopPropagation(); // Avoid double trigger
+
+            if (!audioContext) await startAudio();
+
+            if (audio.paused) {
+                await audioContext.resume();
+                audio.play()
+                    .then(() => {
+                        btnToggleMusic.classList.add('active-music', 'playing');
+                        btnToggleMusic.innerHTML = '<span class="music-icon">🎵</span> Saturno: ON';
+                    });
+            } else {
+                audio.pause();
+                btnToggleMusic.classList.remove('active-music', 'playing');
+                btnToggleMusic.innerHTML = '<span class="music-icon">🎵</span> Saturno: OFF';
+            }
         });
 
         // Gesture Detection
