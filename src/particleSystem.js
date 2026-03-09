@@ -264,16 +264,17 @@ export class ParticleSystem {
 
     rotateTo(handData) {
         this.handActive = true;
-        // Smoothly rotate points toward hand position
-        const targetX = handData.y * 0.7; // Sensitivity boost
-        const targetY = handData.x * 0.7;
+        // Balanced sensitivity: snappy but controllable
+        const targetX = handData.y * 1.5;
+        const targetY = handData.x * 1.5;
 
-        // Simple lerp for smoothness
-        this.particles.rotation.x += (targetX - this.particles.rotation.x) * 0.1;
-        this.particles.rotation.y += (targetY - this.particles.rotation.y) * 0.1;
+        // Smoother lerp for more refined feedback
+        this.particles.rotation.x += (targetX - this.particles.rotation.x) * 0.15;
+        this.particles.rotation.y += (targetY - this.particles.rotation.y) * 0.15;
 
+        // Pitch reaction (tilt) - Made MUCH more subtle as requested
         if (handData.pitch) {
-            this.particles.rotation.z += (handData.pitch * -0.2 - this.particles.rotation.z) * 0.05;
+            this.particles.rotation.z += (handData.pitch * -0.1 - this.particles.rotation.z) * 0.03;
         }
     }
 }
