@@ -56,41 +56,58 @@ class App {
 
         // --- Robust Autostart logic ---
         const startAudio = async () => {
-            if (!audioContext) {
-                console.log("Starting Audio Engine on first interaction...");
-                const AudioCtx = window.AudioContext || window.webkitAudioContext;
-                if (!AudioCtx) return;
+            console.log("Attempting to start audio...");
+            try {
+                if (!audioContext) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (!AudioCtx) {
+                        console.error("AudioContext not supported in this browser.");
+                        return;
+                    }
 
-                audioContext = new AudioCtx();
-                source = audioContext.createMediaElementSource(audio);
-                analyser = audioContext.createAnalyser();
-                source.connect(analyser);
-                analyser.connect(audioContext.destination);
-                this.particles.setAudioAnalyser(analyser);
-            }
+                    audioContext = new AudioCtx();
+                    source = audioContext.createMediaElementSource(audio);
+                    analyser = audioContext.createAnalyser();
+                    source.connect(analyser);
+                    analyser.connect(audioContext.destination);
+                    this.particles.setAudioAnalyser(analyser);
+                    console.log("Audio Engine Initialized.");
+                }
 
-            if (audio.paused) {
-                try {
+                if (audioContext.state === 'suspended') {
                     await audioContext.resume();
+                    console.log("AudioContext resumed.");
+                }
+
+                if (audio.paused) {
                     await audio.play();
                     console.log("✅ Saturno is playing.");
                     if (musicIcon) musicIcon.classList.add('playing-anim');
 
-                    // Cleanup interactions
+                    // Only remove if playing successfully
                     document.removeEventListener('click', startAudio);
                     document.removeEventListener('touchstart', startAudio);
-                } catch (err) {
-                    console.warn("Autoplay still waiting for more explicit interaction...");
                 }
+            } catch (err) {
+                console.error("Audio Initialization/Playback Error:", err);
             }
         };
 
         // Try to play immediately (fails in most browsers)
         startAudio();
 
-        // Universal interaction hooks (First click/tap anywhere starts it)
-        document.addEventListener('click', startAudio, { once: true });
+        // Fast audio trigger
+        const fastStart = () => {
+            startAudio();
+            document.removeEventListener('mousemove', fastStart);
+            document.removeEventListener('scroll', fastStart);
+        };
+
+        document.addEventListener('mousemove', fastStart, { once: true });
+        document.addEventListener('scroll', fastStart, { once: true });
+        document.addEventListener('mousedown', startAudio, { once: true });
         document.addEventListener('touchstart', startAudio, { once: true });
+        document.addEventListener('keydown', startAudio, { once: true });
 
         // Gesture Detection
         this.gestureHandler = new GestureHandler(
@@ -99,6 +116,15 @@ class App {
                 if (this.particles) this.particles.rotateTo(handData);
             }
         );
+
+        // Special check for Women's Day UI
+        const today = new Date();
+        if (today.getMonth() === 2 && today.getDate() === 8) {
+            const loveLabel = document.getElementById('gesture-indicator-love');
+            if (loveLabel) {
+                loveLabel.innerHTML = '<span class="emoji">👌</span> I LOVE YOU';
+            }
+        }
 
         // Event listeners
         window.addEventListener('resize', () => this.onResize());

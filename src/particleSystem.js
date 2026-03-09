@@ -4,7 +4,9 @@ import TWEEN from '@tweenjs/tween.js';
 export class ParticleSystem {
     constructor(scene) {
         this.scene = scene;
-        this.particleCount = 12000;
+        this.particleCount = 18000;
+        this.particleCountMain = 15000;
+        this.particleCountStars = 3000;
         this.particles = null;
         this.geometry = new THREE.BufferGeometry();
         this.currentPositions = new Float32Array(this.particleCount * 3);
@@ -27,6 +29,30 @@ export class ParticleSystem {
             map: sprite,
             color: new THREE.Color(0x00f2ff)
         });
+
+        // Background stars (static or slow)
+        const starGeometry = new THREE.BufferGeometry();
+        const starPositions = new Float32Array(this.particleCountStars * 3);
+        for (let i = 0; i < this.particleCountStars; i++) {
+            const r = 30 + Math.random() * 50;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.random() * Math.PI;
+            starPositions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+            starPositions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+            starPositions[i * 3 + 2] = r * Math.cos(phi);
+        }
+        starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+        const starMaterial = new THREE.PointsMaterial({
+            size: 0.04,
+            transparent: true,
+            opacity: 0.4,
+            color: 0xffffff,
+            map: sprite,
+            blending: THREE.AdditiveBlending
+        });
+        const backgroundStars = new THREE.Points(starGeometry, starMaterial);
+        this.scene.add(backgroundStars);
+        this.backgroundStars = backgroundStars; // For slow rotation
 
         // Initial distribution: Sphere
         this.setInitialState();
@@ -151,13 +177,20 @@ export class ParticleSystem {
 
         ctx.fillStyle = 'white';
         // Multi-line support to make it fit better
-        ctx.font = 'bold 80px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        // Split text or use smaller font to fit
-        ctx.fillText('Hoy celebramos tu fuerza.', 600, 100);
-        ctx.fillText('¡Feliz Día de la Mujer!', 600, 200);
+        const today = new Date();
+        const isWomensDay = today.getMonth() === 2 && today.getDate() === 8;
+
+        if (isWomensDay) {
+            ctx.font = 'bold 150px Orbitron, sans-serif';
+            ctx.fillText('I LOVE YOU', 600, 150);
+        } else {
+            ctx.font = 'bold 80px Outfit, sans-serif';
+            ctx.fillText('Hoy celebramos tu fuerza.', 600, 100);
+            ctx.fillText('¡Feliz Día de la Mujer!', 600, 200);
+        }
 
         const imageData = ctx.getImageData(0, 0, 1200, 300).data;
         const points = [];
@@ -194,44 +227,37 @@ export class ParticleSystem {
 
     generateGalaxy(targets) {
         const radius = 12;
+        const arms = 3;
 
         for (let i = 0; i < this.particleCount; i++) {
-            // Percent of particles in core vs halo vs arms
             const rand = Math.random();
 
-            if (rand < 0.45) {
-                // Dense Elliptical Core
-                const r = Math.pow(Math.random(), 1.5) * 4;
+            if (rand < 0.30) {
+                // 1. Core (Balanced at 30%)
+                const r = Math.pow(Math.random(), 2) * 3.5;
                 const theta = Math.random() * Math.PI * 2;
-                const phi = Math.acos(2 * Math.random() - 1);
+                targets[i * 3] = r * Math.cos(theta);
+                targets[i * 3 + 1] = (Math.random() - 0.5) * 1.5;
+                targets[i * 3 + 2] = r * Math.sin(theta);
+            } else if (rand < 0.50) {
+                // 2. Spiral Arms (Reduced to 20% to avoid lag)
+                const r = 2.0 + Math.random() * radius;
+                const armIndex = i % arms;
+                const angle = armIndex * (Math.PI * 2 / arms) + (r * 0.45);
 
-                targets[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-                targets[i * 3 + 1] = r * Math.cos(phi) * 0.6; // Slightly flattened
-                targets[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
-            } else if (rand < 0.85) {
-                // Diffuse Spiral Arms (Cloudy)
-                const r = 3 + Math.pow(Math.random(), 1.2) * (radius - 3);
-                const arms = 2;
-                const armAngle = (i % arms) * ((Math.PI * 2) / arms);
-                const spin = r * 0.45;
-
-                // Very wide spread for 'cloud' effect
-                const spreadX = (Math.random() - 0.5) * (r * 0.6);
-                const spreadY = (Math.random() - 0.5) * (r * 0.25);
-                const spreadZ = (Math.random() - 0.5) * (r * 0.6);
-
-                targets[i * 3] = Math.cos(armAngle + spin) * r + spreadX;
-                targets[i * 3 + 1] = spreadY;
-                targets[i * 3 + 2] = Math.sin(armAngle + spin) * r + spreadZ;
+                const jitter = (Math.random() - 0.5) * 1.5;
+                targets[i * 3] = Math.cos(angle) * r + jitter;
+                targets[i * 3 + 1] = (Math.random() - 0.5) * 0.8;
+                targets[i * 3 + 2] = Math.sin(angle) * r + jitter;
             } else {
-                // Outer Halo (Sparse stars)
-                const r = Math.random() * (radius + 2);
+                // 3. Galactic Dust (Increased to 50% for a smooth, full look)
+                const r = Math.random() * radius;
                 const theta = Math.random() * Math.PI * 2;
-                const phi = Math.random() * Math.PI;
+                const spread = 2.2;
 
-                targets[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-                targets[i * 3 + 1] = r * Math.cos(phi);
-                targets[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+                targets[i * 3] = r * Math.cos(theta) + (Math.random() - 0.5) * spread;
+                targets[i * 3 + 1] = (Math.random() - 0.5) * 2.5;
+                targets[i * 3 + 2] = r * Math.sin(theta) + (Math.random() - 0.5) * spread;
             }
         }
     }
@@ -239,6 +265,7 @@ export class ParticleSystem {
     update(time) {
         // Subtle constant rotation
         this.particles.rotation.y += 0.0015;
+        if (this.backgroundStars) this.backgroundStars.rotation.y += 0.0003;
 
         // Auto-center to a CINEMATIC TILT if no hand is being tracked
         // Instead of 0, we use a slight X and Z tilt for better perspective
