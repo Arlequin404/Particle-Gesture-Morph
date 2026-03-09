@@ -190,28 +190,62 @@ export class ParticleSystem {
     }
 
     generateGalaxy(targets) {
-        const arms = 3;
-        const randomness = 0.4;
-        const radius = 8;
+        const radius = 12;
 
         for (let i = 0; i < this.particleCount; i++) {
-            const r = Math.random() * radius;
-            const armAngle = (i % arms) * ((Math.PI * 2) / arms);
-            const spinAngle = r * 0.8; // The "twist" of the galaxy
+            // Percent of particles in core vs halo vs arms
+            const rand = Math.random();
 
-            const randomX = (Math.random() - 0.5) * randomness * r;
-            const randomY = (Math.random() - 0.5) * randomness * 0.5; // Flatter
-            const randomZ = (Math.random() - 0.5) * randomness * r;
+            if (rand < 0.45) {
+                // Dense Elliptical Core
+                const r = Math.pow(Math.random(), 1.5) * 4;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
 
-            targets[i * 3] = Math.cos(armAngle + spinAngle) * r + randomX;
-            targets[i * 3 + 1] = randomY;
-            targets[i * 3 + 2] = Math.sin(armAngle + spinAngle) * r + randomZ;
+                targets[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+                targets[i * 3 + 1] = r * Math.cos(phi) * 0.6; // Slightly flattened
+                targets[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+            } else if (rand < 0.85) {
+                // Diffuse Spiral Arms (Cloudy)
+                const r = 3 + Math.pow(Math.random(), 1.2) * (radius - 3);
+                const arms = 2;
+                const armAngle = (i % arms) * ((Math.PI * 2) / arms);
+                const spin = r * 0.45;
+
+                // Very wide spread for 'cloud' effect
+                const spreadX = (Math.random() - 0.5) * (r * 0.6);
+                const spreadY = (Math.random() - 0.5) * (r * 0.25);
+                const spreadZ = (Math.random() - 0.5) * (r * 0.6);
+
+                targets[i * 3] = Math.cos(armAngle + spin) * r + spreadX;
+                targets[i * 3 + 1] = spreadY;
+                targets[i * 3 + 2] = Math.sin(armAngle + spin) * r + spreadZ;
+            } else {
+                // Outer Halo (Sparse stars)
+                const r = Math.random() * (radius + 2);
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.random() * Math.PI;
+
+                targets[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+                targets[i * 3 + 1] = r * Math.cos(phi);
+                targets[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+            }
         }
     }
 
     update(time) {
         // Subtle constant rotation
-        this.particles.rotation.y += 0.001;
+        this.particles.rotation.y += 0.0015;
+
+        // Auto-center to a CINEMATIC TILT if no hand is being tracked
+        // Instead of 0, we use a slight X and Z tilt for better perspective
+        if (!this.handActive) {
+            const targetX = 0.6; // Cinematic tilt
+            const targetZ = -0.2;
+            this.particles.rotation.x += (targetX - this.particles.rotation.x) * 0.02;
+            this.particles.rotation.z += (targetZ - this.particles.rotation.z) * 0.02;
+        }
+        this.handActive = false; // Reset for next frame
 
         // Music reaction
         if (this.analyser) {
@@ -229,15 +263,15 @@ export class ParticleSystem {
     }
 
     rotateTo(handData) {
+        this.handActive = true;
         // Smoothly rotate points toward hand position
-        const targetX = handData.y * 0.5; // Hand Y controls Rotation X
-        const targetY = handData.x * 0.5; // Hand X controls Rotation Y
+        const targetX = handData.y * 0.7; // Sensitivity boost
+        const targetY = handData.x * 0.7;
 
         // Simple lerp for smoothness
         this.particles.rotation.x += (targetX - this.particles.rotation.x) * 0.1;
         this.particles.rotation.y += (targetY - this.particles.rotation.y) * 0.1;
 
-        // Optional Pitch/Roll from hand orientation
         if (handData.pitch) {
             this.particles.rotation.z += (handData.pitch * -0.2 - this.particles.rotation.z) * 0.05;
         }
