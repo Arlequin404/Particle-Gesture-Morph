@@ -67,7 +67,7 @@ export class ParticleSystem {
             case 'heart': this.generateHeart(targets); break;
             case 'star': this.generateStar(targets); break;
             case 'love': this.generateLove(targets); break;
-            default: this.generateOrbit(targets); break;
+            default: this.generateGalaxy(targets); break;
         }
 
         // Tween positions
@@ -189,14 +189,23 @@ export class ParticleSystem {
         }
     }
 
-    generateOrbit(targets) {
-        // Amorphous cloud rotating
+    generateGalaxy(targets) {
+        const arms = 3;
+        const randomness = 0.4;
+        const radius = 8;
+
         for (let i = 0; i < this.particleCount; i++) {
-            const dist = 4 + Math.random() * 2;
-            const angle = Math.random() * Math.PI * 2;
-            targets[i * 3] = dist * Math.cos(angle);
-            targets[i * 3 + 1] = (Math.random() - 0.5) * 6;
-            targets[i * 3 + 2] = dist * Math.sin(angle);
+            const r = Math.random() * radius;
+            const armAngle = (i % arms) * ((Math.PI * 2) / arms);
+            const spinAngle = r * 0.8; // The "twist" of the galaxy
+
+            const randomX = (Math.random() - 0.5) * randomness * r;
+            const randomY = (Math.random() - 0.5) * randomness * 0.5; // Flatter
+            const randomZ = (Math.random() - 0.5) * randomness * r;
+
+            targets[i * 3] = Math.cos(armAngle + spinAngle) * r + randomX;
+            targets[i * 3 + 1] = randomY;
+            targets[i * 3 + 2] = Math.sin(armAngle + spinAngle) * r + randomZ;
         }
     }
 

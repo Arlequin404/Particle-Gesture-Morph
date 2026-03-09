@@ -76,18 +76,22 @@ h1 {
     border-radius: 30px;
     border: 1px solid var(--glass-border);
     backdrop-filter: blur(10px);
+    pointer-events: auto;
+    /* Enable interaction */
 }
 
 .volume-container {
     display: flex;
     align-items: center;
     gap: 10px;
+    pointer-events: auto;
 }
 
 #volume-slider {
     width: 80px;
     cursor: pointer;
     accent-color: var(--accent);
+    pointer-events: auto;
 }
 
 .volume-icon {
@@ -204,18 +208,19 @@ h1 {
     box-shadow: 0 0 20px rgba(0, 242, 255, 0.4);
 }
 
-.music-icon {
-    font-size: 1.1rem;
+.music-playing-icon {
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
 }
 
-.playing .music-icon {
+.playing-anim {
     animation: music-pulse 1s infinite alternate;
 }
 
 @keyframes music-pulse {
     from {
         transform: scale(1);
-        opacity: 0.8;
+        opacity: 0.7;
     }
 
     to {
@@ -308,6 +313,7 @@ h1 {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    pointer-events: auto;
 }
 
 .gesture-card.active {
