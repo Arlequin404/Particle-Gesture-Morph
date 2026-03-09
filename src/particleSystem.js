@@ -146,27 +146,30 @@ export class ParticleSystem {
     generateLove(targets) {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        canvas.width = 1000;
-        canvas.height = 200;
+        canvas.width = 1200;
+        canvas.height = 300;
 
         ctx.fillStyle = 'white';
-        // Bold sans-serif for better particle density
-        ctx.font = 'bold 120px sans-serif';
+        // Multi-line support to make it fit better
+        ctx.font = 'bold 80px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('I LOVE YOU', 500, 100);
 
-        const imageData = ctx.getImageData(0, 0, 1000, 200).data;
+        // Split text or use smaller font to fit
+        ctx.fillText('Hoy celebramos tu fuerza.', 600, 100);
+        ctx.fillText('¡Feliz Día de la Mujer!', 600, 200);
+
+        const imageData = ctx.getImageData(0, 0, 1200, 300).data;
         const points = [];
 
         // High density sampling
-        for (let y = 0; y < 200; y += 2) {
-            for (let x = 0; x < 1000; x += 2) {
-                const alpha = imageData[(y * 1000 + x) * 4 + 3];
-                if (alpha > 180) { // Sharper threshold
+        for (let y = 0; y < 300; y += 3) {
+            for (let x = 0; x < 1200; x += 3) {
+                const alpha = imageData[(y * 1200 + x) * 4 + 3];
+                if (alpha > 180) {
                     points.push({
-                        x: (x - 500) * 0.03,
-                        y: (100 - y) * 0.03
+                        x: (x - 600) * 0.02,
+                        y: (150 - y) * 0.02
                     });
                 }
             }
